@@ -235,7 +235,9 @@ async function loadCalendar(){
   const el = document.getElementById("cal-list");
   try{
     const res = await fetch(`${CONFIG.WORKER_URL}/calendar`);
-    const icsText = await res.text();
+    let icsText = await res.text();
+    // Zeilenfaltung (RFC 5545) robust auflösen: fortgesetzte Zeilen beginnen mit Leerzeichen/Tab
+    icsText = icsText.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").replace(/\r\n/g, "\n");
     const jcal = ICAL.parse(icsText);
     const comp = new ICAL.Component(jcal);
     const vevents = comp.getAllSubcomponents("vevent");
