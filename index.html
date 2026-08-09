@@ -76,13 +76,17 @@
 
   /* Weather */
   .weather{ grid-area:weather; display:flex; flex-direction:column; }
-  .wx-cities{ display:flex; flex-direction:column; gap:8px; flex:1; justify-content:center; }
+  .wx-cities{ display:flex; flex-direction:column; gap:8px; justify-content:flex-start; }
   .wx-city{
     display:flex; align-items:center; gap:12px;
     border:2px solid var(--text-dim); border-radius:8px; padding:8px 12px;
   }
   .wx-city .name{ width:60px; flex-shrink:0; font-size:0.85rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--text); }
   .wx-periods{ display:flex; gap:10px; flex:1; }
+  .wx-webcam-large{
+    width:100%; max-height:64px; margin-top:8px; border-radius:6px; object-fit:cover;
+    border:1px solid var(--line); background:#000; display:block;
+  }
   .wx-period{ text-align:center; flex:1; }
   .wx-period .wx-icon{ font-size:1.3rem; line-height:1; }
   .wx-period .wx-temp{ font-size:1.05rem; font-weight:800; margin-top:2px; }
@@ -133,6 +137,7 @@
     <div class="wx-cities" id="weather-list">
       <div class="status">Lädt…</div>
     </div>
+    <img class="wx-webcam-large" id="brigels-webcam-large" alt="Webcam Brigels" style="display:none;">
   </div>
 
   <div class="panel calendar">
@@ -163,6 +168,8 @@ const CONFIG = {
     { name: "Basel",   lat: 47.5596, lon: 7.5886 },
     { name: "Brigels",  lat: 46.7847, lon: 9.0567 },
   ],
+
+  BRIGELS_WEBCAM_URL: "https://wtvpictfc.feratel.com/picture/35/4087.jpeg?design=noxdesign&dcsdesign=WTP_feratel.com",
 };
 /* ========================================================= */
 
@@ -215,6 +222,9 @@ async function loadWeather(){
     }
   }));
   document.getElementById("weather-list").innerHTML = html.join("");
+  const webcamEl = document.getElementById("brigels-webcam-large");
+  webcamEl.src = `${CONFIG.BRIGELS_WEBCAM_URL}&t=${Date.now()}`;
+  webcamEl.style.display = "block";
 }
 loadWeather();
 setInterval(loadWeather, 15*60*1000);
