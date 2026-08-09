@@ -50,10 +50,10 @@
   .header{ grid-area:header; display:flex; align-items:baseline; justify-content:space-between; padding:20px 30px; }
   .header .place{ font-size:1.05rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
   .header .place .dot{ color:var(--red); }
-  .clockwrap{ text-align:right; }
+  .clockwrap{ text-align:right; display:flex; align-items:baseline; gap:14px; }
   .clock{ font-size:2.6rem; font-weight:800; line-height:1; letter-spacing:0.01em; }
   .clock span{ color:var(--red); }
-  .date{ font-size:0.9rem; color:var(--text-dim); margin-top:4px; text-transform:capitalize; }
+  .date{ font-size:0.9rem; color:var(--text-dim); text-transform:capitalize; }
 
   /* Tram */
   .tram{ grid-area:tram; }
@@ -122,8 +122,8 @@
   <div class="panel header">
     <div class="place">Bruderholz <span class="dot">·</span> Basel</div>
     <div class="clockwrap">
-      <div class="clock" id="clock">--:--<span>:--</span></div>
       <div class="date" id="date">–</div>
+      <div class="clock" id="clock">--:--<span>:--</span></div>
     </div>
   </div>
 
