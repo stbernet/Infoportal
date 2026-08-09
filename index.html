@@ -76,10 +76,10 @@
 
   /* Weather */
   .weather{ grid-area:weather; display:flex; flex-direction:column; }
-  .wx-cities{ display:flex; gap:18px; flex:1; }
-  .wx-city{ flex:1; }
-  .wx-city .name{ font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:6px;}
-  .wx-periods{ display:flex; gap:10px; }
+  .wx-cities{ display:flex; flex-direction:column; gap:10px; flex:1; justify-content:center; }
+  .wx-city{ display:flex; align-items:center; gap:12px; }
+  .wx-city .name{ width:60px; flex-shrink:0; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); }
+  .wx-periods{ display:flex; gap:10px; flex:1; }
   .wx-period{ text-align:center; flex:1; }
   .wx-period .wx-icon{ font-size:1.3rem; line-height:1; }
   .wx-period .wx-temp{ font-size:1.05rem; font-weight:800; margin-top:2px; }
