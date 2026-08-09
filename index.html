@@ -78,10 +78,12 @@
   .weather{ grid-area:weather; display:flex; flex-direction:column; }
   .wx-cities{ display:flex; gap:18px; flex:1; }
   .wx-city{ flex:1; }
-  .wx-city .name{ font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:4px;}
-  .wx-city .temp{ font-size:2rem; font-weight:800; line-height:1; }
-  .wx-city .desc{ font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
-  .wx-city .wind{ font-size:0.7rem; color:var(--text-dim); margin-top:2px; }
+  .wx-city .name{ font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:6px;}
+  .wx-periods{ display:flex; gap:10px; }
+  .wx-period{ text-align:center; flex:1; }
+  .wx-period .wx-icon{ font-size:1.3rem; line-height:1; }
+  .wx-period .wx-temp{ font-size:1.05rem; font-weight:800; margin-top:2px; }
+  .wx-period .wx-label{ font-size:0.55rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); margin-top:2px; }
 
   /* Calendar */
   .calendar{
@@ -173,25 +175,37 @@ updateClock();
 setInterval(updateClock, 1000);
 
 // ---------- Wetter (Open-Meteo) ----------
-const WMO = {
-  0:"Klar",1:"Meist klar",2:"Teilweise bewölkt",3:"Bedeckt",
-  45:"Nebel",48:"Nebel",51:"Nieselregen",53:"Nieselregen",55:"Nieselregen",
-  61:"Regen",63:"Regen",65:"Starker Regen",71:"Schnee",73:"Schnee",75:"Starker Schnee",
-  80:"Schauer",81:"Schauer",82:"Starke Schauer",95:"Gewitter",96:"Gewitter",99:"Gewitter"
+const WMO_ICON = {
+  0:"☀️",1:"🌤️",2:"⛅",3:"☁️",
+  45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌦️",
+  61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",
+  80:"🌦️",81:"🌦️",82:"⛈️",95:"⛈️",96:"⛈️",99:"⛈️"
 };
 async function loadWeather(){
   const html = await Promise.all(CONFIG.WEATHER.map(async city => {
     try{
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&timezone=Europe%2FZurich`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m,weathercode&timezone=Europe%2FZurich&forecast_days=1`;
       const res = await fetch(url);
       const data = await res.json();
-      const cw = data.current_weather;
-      const desc = WMO[cw.weathercode] ?? "–";
+      const temps = data.hourly.temperature_2m;
+      const codes = data.hourly.weathercode;
+      const periods = [
+        { label: "Morgen", hour: 8 },
+        { label: "Mittag", hour: 13 },
+        { label: "Abend",  hour: 19 },
+      ];
+      const periodsHtml = periods.map(p => {
+        const icon = WMO_ICON[codes[p.hour]] ?? "❔";
+        const temp = Math.round(temps[p.hour]);
+        return `<div class="wx-period">
+          <div class="wx-icon">${icon}</div>
+          <div class="wx-temp">${temp}°</div>
+          <div class="wx-label">${p.label}</div>
+        </div>`;
+      }).join("");
       return `<div class="wx-city">
         <div class="name">${city.name}</div>
-        <div class="temp">${Math.round(cw.temperature)}°</div>
-        <div class="desc">${desc}</div>
-        <div class="wind">Wind ${Math.round(cw.windspeed)} km/h</div>
+        <div class="wx-periods">${periodsHtml}</div>
       </div>`;
     }catch(e){
       return `<div class="wx-city"><div class="name">${city.name}</div><div class="status">Nicht verfügbar</div></div>`;
