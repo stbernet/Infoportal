@@ -64,8 +64,9 @@
   .badge{
     width:28px; height:28px; border-radius:50%; background:var(--red); color:#fff;
     display:flex; align-items:center; justify-content:center;
-    font-weight:800; font-size:0.8rem;
+    font-weight:800; font-size:0.8rem; flex-shrink:0;
   }
+  .badge-square{ border-radius:6px; }
   .dest{ font-size:0.85rem; font-weight:600; }
   .mins{ font-size:1.1rem; font-weight:800; text-align:right; min-width:52px; }
   .mins small{ font-size:0.7rem; font-weight:600; color:var(--text-dim); }
@@ -219,7 +220,7 @@ async function loadTram(){
         const mins = Math.max(0, Math.round((dep - Date.now())/60000));
         const urgencyPct = Math.max(4, 100 - Math.min(mins,20)*5);
         return `<div class="tram-row">
-          <div class="badge">${e.number}</div>
+          <div class="badge${String(e.number) === '16' ? ' badge-square' : ''}">${e.number}</div>
           <div class="dest">${e.to}</div>
           <div class="mins">${mins}<small> min</small></div>
           <div class="urgency" style="width:${urgencyPct}%"></div>
