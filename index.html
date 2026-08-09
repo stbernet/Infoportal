@@ -231,13 +231,33 @@ loadTram();
 setInterval(loadTram, 30*1000);
 
 // ---------- Kalender (via Worker-Proxy + ical.js) ----------
+function unfoldICS(text){
+  const rawLines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const propStart = /^[A-Za-z0-9-]+[;:]/; // z.B. "SUMMARY:" oder "DTSTART;TZID=..."
+  const lines = [];
+  for (const line of rawLines){
+    const isContinuation =
+      /^[ \t]/.test(line) ||
+      (lines.length > 0 &&
+        line.trim() !== "" &&
+        line !== "BEGIN:VEVENT" && line !== "END:VEVENT" &&
+        line !== "BEGIN:VCALENDAR" && line !== "END:VCALENDAR" &&
+        line !== "BEGIN:VTIMEZONE" && line !== "END:VTIMEZONE" &&
+        !propStart.test(line));
+    if (isContinuation && lines.length > 0){
+      lines[lines.length - 1] += line.replace(/^[ \t]/, "");
+    } else {
+      lines.push(line);
+    }
+  }
+  return lines.join("\n");
+}
 async function loadCalendar(){
   const el = document.getElementById("cal-list");
   try{
     const res = await fetch(`${CONFIG.WORKER_URL}/calendar`);
     let icsText = await res.text();
-    // Zeilenfaltung (RFC 5545) robust auflösen: fortgesetzte Zeilen beginnen mit Leerzeichen/Tab
-    icsText = icsText.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").replace(/\r\n/g, "\n");
+    icsText = unfoldICS(icsText);
     const jcal = ICAL.parse(icsText);
     const comp = new ICAL.Component(jcal);
     const vevents = comp.getAllSubcomponents("vevent");
