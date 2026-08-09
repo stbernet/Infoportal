@@ -83,7 +83,11 @@
   /* Calendar */
   .calendar{
     grid-area:calendar; padding:26px 30px; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  #cal-list{
     display:grid; grid-template-columns:repeat(7,1fr); gap:0 20px;
+    flex:1; min-height:0;
   }
   .cal-day{ border-left:1px solid var(--line); padding-left:18px; overflow-y:auto; }
   .cal-day:first-child{ border-left:none; padding-left:0; }
