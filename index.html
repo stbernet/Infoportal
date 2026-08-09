@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Infoportal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ical.js@2.1.0/build/ical.min.js"></script>
+<style>
+  :root{
+    --bg:#14161a;
+    --panel:#1b1e24;
+    --line:#2a2e35;
+    --text:#f4f2ea;
+    --text-dim:#8b8f96;
+    --red:#e6392f;
+    --amber:#d99a3d;
+  }
+  *{box-sizing:border-box; -webkit-user-select:none; user-select:none;}
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .eyebrow{
+    font-size:0.72rem; font-weight:700; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--text-dim); margin:0 0 10px 0;
+  }
+  .tram .eyebrow, .weather .eyebrow{ font-size:0.62rem; margin-bottom:6px; }
+  .grid{
+    display:grid; height:100vh; width:100vw;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto 0.85fr 1.15fr;
+    grid-template-areas:
+      "header   header   header"
+      "tram     weather  photos"
+      "calendar calendar calendar";
+    gap:1px; background:var(--line);
+  }
+  .panel{ background:var(--panel); padding:22px 26px; overflow:hidden; }
+  .header{ grid-column:1/4; }
+  .tram, .weather{ padding:16px 22px; }
+
+  /* Header */
+  .header{ grid-area:header; display:flex; align-items:baseline; justify-content:space-between; padding:20px 30px; }
+  .header .place{ font-size:1.05rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .header .place .dot{ color:var(--red); }
+  .clockwrap{ text-align:right; }
+  .clock{ font-size:2.6rem; font-weight:800; line-height:1; letter-spacing:0.01em; }
+  .clock span{ color:var(--red); }
+  .date{ font-size:0.9rem; color:var(--text-dim); margin-top:4px; text-transform:capitalize; }
+
+  /* Tram */
+  .tram{ grid-area:tram; }
+  .tram-row{
+    display:grid; grid-template-columns:36px 1fr auto; align-items:center;
+    gap:12px; padding:7px 0; border-bottom:1px solid var(--line); position:relative;
+  }
+  .tram-row:last-child{ border-bottom:none; }
+  .badge{
+    width:28px; height:28px; border-radius:50%; background:var(--red); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:0.8rem;
+  }
+  .dest{ font-size:0.85rem; font-weight:600; }
+  .mins{ font-size:1.1rem; font-weight:800; text-align:right; min-width:52px; }
+  .mins small{ font-size:0.7rem; font-weight:600; color:var(--text-dim); }
+  .urgency{ position:absolute; bottom:0; left:0; height:2px; background:var(--red); }
+
+  /* Weather */
+  .weather{ grid-area:weather; display:flex; flex-direction:column; }
+  .wx-cities{ display:flex; gap:18px; flex:1; }
+  .wx-city{ flex:1; }
+  .wx-city .name{ font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:4px;}
+  .wx-city .temp{ font-size:2rem; font-weight:800; line-height:1; }
+  .wx-city .desc{ font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
+  .wx-city .wind{ font-size:0.7rem; color:var(--text-dim); margin-top:2px; }
+
+  /* Calendar */
+  .calendar{
+    grid-area:calendar; padding:26px 30px; overflow:hidden;
+    display:grid; grid-template-columns:repeat(7,1fr); gap:0 20px;
+  }
+  .cal-day{ border-left:1px solid var(--line); padding-left:18px; overflow-y:auto; }
+  .cal-day:first-child{ border-left:none; padding-left:0; }
+  .cal-day-label{ font-size:0.95rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--amber); margin-bottom:12px; }
+  .cal-event{ font-size:1.05rem; margin-bottom:12px; line-height:1.3; }
+  .cal-event .time{ display:block; color:var(--text-dim); font-weight:600; font-size:0.8rem; margin-bottom:2px; }
+  .cal-empty{ color:var(--text-dim); font-size:0.95rem; }
+
+  /* Photos */
+  .photos{ grid-area:photos; position:relative; padding:0; }
+  .photo-frame{ position:absolute; inset:18px; border-radius:6px; overflow:hidden; background:#000; }
+  .photo-frame img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    opacity:0; transition:opacity 1.4s ease;
+  }
+  .photo-frame img.active{ opacity:1; }
+  .photo-label{ position:absolute; left:18px; bottom:18px; z-index:2; font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#fff; background:rgba(0,0,0,0.45); padding:5px 10px; border-radius:4px; }
+
+  .status{ color:var(--text-dim); font-size:0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="grid">
+  <div class="panel header">
+    <div class="place">Bruderholz <span class="dot">·</span> Basel</div>
+    <div class="clockwrap">
+      <div class="clock" id="clock">--:--<span>:--</span></div>
+      <div class="date" id="date">–</div>
+    </div>
+  </div>
+
+  <div class="panel tram">
+    <div class="eyebrow">Tram 15 / 16 · Abfahrten</div>
+    <div id="tram-list"><div class="status">Lädt…</div></div>
+  </div>
+
+  <div class="panel weather">
+    <div class="eyebrow">Wetter</div>
+    <div class="wx-cities" id="weather-list">
+      <div class="status">Lädt…</div>
+    </div>
+  </div>
+
+  <div class="panel calendar">
+    <div class="eyebrow">Kalender · nächste 7 Tage</div>
+    <div id="cal-list"><div class="status">Lädt…</div></div>
+  </div>
+
+  <div class="panel photos">
+    <div class="photo-frame" id="photo-frame"></div>
+    <div class="photo-label">Favoriten</div>
+  </div>
+</div>
+
+<script>
+/* ============ KONFIGURATION – hier eintragen ============ */
+const CONFIG = {
+  WORKER_URL: "https://infoportal-proxy.9c65t7htnp.workers.dev",
+
+  // GitHub-Repo, in dem diese index.html liegt (für den Fotos-Ordner)
+  GITHUB_USER: "stbernet",
+  GITHUB_REPO: "Infoportal",
+  PHOTOS_FOLDER: "photos", // Ordnername im Repo, in den du Fotos hochlädst
+
+  TRAM_STATION_QUERY: "Bruderholz",   // Suchbegriff für die Haltestelle
+  TRAM_LINES: ["15", "16"],
+
+  WEATHER: [
+    { name: "Basel",   lat: 47.5596, lon: 7.5886 },
+    { name: "Brigels",  lat: 46.7847, lon: 9.0567 },
+  ],
+};
+/* ========================================================= */
+
+// ---------- Uhr ----------
+function updateClock(){
+  const now = new Date();
+  const time = now.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  const [hm, s] = [time.slice(0,5), time.slice(6,8)];
+  document.getElementById("clock").innerHTML = `${hm}<span>:${s}</span>`;
+  document.getElementById("date").textContent = now.toLocaleDateString("de-CH",{weekday:"long", day:"numeric", month:"long"});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ---------- Wetter (Open-Meteo) ----------
+const WMO = {
+  0:"Klar",1:"Meist klar",2:"Teilweise bewölkt",3:"Bedeckt",
+  45:"Nebel",48:"Nebel",51:"Nieselregen",53:"Nieselregen",55:"Nieselregen",
+  61:"Regen",63:"Regen",65:"Starker Regen",71:"Schnee",73:"Schnee",75:"Starker Schnee",
+  80:"Schauer",81:"Schauer",82:"Starke Schauer",95:"Gewitter",96:"Gewitter",99:"Gewitter"
+};
+async function loadWeather(){
+  const html = await Promise.all(CONFIG.WEATHER.map(async city => {
+    try{
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&timezone=Europe%2FZurich`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const cw = data.current_weather;
+      const desc = WMO[cw.weathercode] ?? "–";
+      return `<div class="wx-city">
+        <div class="name">${city.name}</div>
+        <div class="temp">${Math.round(cw.temperature)}°</div>
+        <div class="desc">${desc}</div>
+        <div class="wind">Wind ${Math.round(cw.windspeed)} km/h</div>
+      </div>`;
+    }catch(e){
+      return `<div class="wx-city"><div class="name">${city.name}</div><div class="status">Nicht verfügbar</div></div>`;
+    }
+  }));
+  document.getElementById("weather-list").innerHTML = html.join("");
+}
+loadWeather();
+setInterval(loadWeather, 15*60*1000);
+
+// ---------- Tram (transport.opendata.ch) ----------
+async function loadTram(){
+  const el = document.getElementById("tram-list");
+  try{
+    const locRes = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(CONFIG.TRAM_STATION_QUERY)}`);
+    const locData = await locRes.json();
+    const station = locData.stations?.[0];
+    if(!station){ el.innerHTML = `<div class="status">Haltestelle nicht gefunden</div>`; return; }
+
+    const sbRes = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${station.id}&limit=40`);
+    const sbData = await sbRes.json();
+
+    const rows = (sbData.stationboard || [])
+      .filter(e => CONFIG.TRAM_LINES.includes(String(e.number)))
+      .slice(0, 6)
+      .map(e => {
+        const dep = new Date(e.stop.departure);
+        const mins = Math.max(0, Math.round((dep - Date.now())/60000));
+        const urgencyPct = Math.max(4, 100 - Math.min(mins,20)*5);
+        return `<div class="tram-row">
+          <div class="badge">${e.number}</div>
+          <div class="dest">${e.to}</div>
+          <div class="mins">${mins}<small> min</small></div>
+          <div class="urgency" style="width:${urgencyPct}%"></div>
+        </div>`;
+      });
+
+    el.innerHTML = rows.length ? rows.join("") : `<div class="status">Keine Abfahrten gefunden</div>`;
+  }catch(e){
+    el.innerHTML = `<div class="status">Nicht verfügbar</div>`;
+  }
+}
+loadTram();
+setInterval(loadTram, 30*1000);
+
+// ---------- Kalender (via Worker-Proxy + ical.js) ----------
+async function loadCalendar(){
+  const el = document.getElementById("cal-list");
+  try{
+    const res = await fetch(`${CONFIG.WORKER_URL}/calendar`);
+    const icsText = await res.text();
+    const jcal = ICAL.parse(icsText);
+    const comp = new ICAL.Component(jcal);
+    const vevents = comp.getAllSubcomponents("vevent");
+
+    const now = new Date();
+    const rangeStart = new Date(now); rangeStart.setHours(0,0,0,0);
+    const rangeEnd = new Date(rangeStart); rangeEnd.setDate(rangeEnd.getDate()+7);
+
+    let occurrences = [];
+    vevents.forEach(vevent => {
+      const event = new ICAL.Event(vevent);
+      if(event.isRecurring()){
+        const iterator = event.iterator();
+        let next; let guard = 0;
+        while((next = iterator.next()) && guard < 500){
+          guard++;
+          const d = next.toJSDate();
+          if(d > rangeEnd) break;
+          if(d >= rangeStart){
+            occurrences.push({summary:event.summary, start:d, allDay:event.startDate.isDate});
+          }
+        }
+      } else {
+        const d = event.startDate.toJSDate();
+        if(d >= rangeStart && d <= rangeEnd){
+          occurrences.push({summary:event.summary, start:d, allDay:event.startDate.isDate});
+        }
+      }
+    });
+    occurrences.sort((a,b)=>a.start-b.start);
+
+    // nach Tag gruppieren
+    const byDay = {};
+    occurrences.forEach(o=>{
+      const key = o.start.toDateString();
+      (byDay[key] ??= []).push(o);
+    });
+
+    const days = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(rangeStart); d.setDate(d.getDate()+i);
+      days.push(d);
+    }
+
+    el.innerHTML = days.map(d=>{
+      const key = d.toDateString();
+      const label = d.toLocaleDateString("de-CH",{weekday:"short", day:"numeric", month:"short"});
+      const events = byDay[key] || [];
+      const evHtml = events.length
+        ? events.map(e=>`<div class="cal-event"><div class="time">${e.allDay ? "Ganztags" : e.start.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit"})}</div><div>${e.summary}</div></div>`).join("")
+        : `<div class="cal-empty">–</div>`;
+      return `<div class="cal-day"><div class="cal-day-label">${label}</div>${evHtml}</div>`;
+    }).join("");
+  }catch(e){
+    el.innerHTML = `<div class="status">Kalender nicht verfügbar</div>`;
+  }
+}
+loadCalendar();
+setInterval(loadCalendar, 30*60*1000);
+
+// ---------- Fotos (aus dem "photos"-Ordner im GitHub-Repo) ----------
+let photoUrls = [];
+let photoIndex = 0;
+async function loadPhotos(){
+  try{
+    const apiUrl = `https://api.github.com/repos/${CONFIG.GITHUB_USER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.PHOTOS_FOLDER}`;
+    const res = await fetch(apiUrl);
+    const files = await res.json();
+    if(Array.isArray(files)){
+      photoUrls = files
+        .filter(f => /\.(jpe?g|png|heic|webp)$/i.test(f.name))
+        .map(f => f.download_url);
+      if(photoUrls.length) renderPhoto();
+    }
+  }catch(e){ /* wird beim nächsten Intervall erneut versucht */ }
+}
+function renderPhoto(){
+  if(!photoUrls.length) return;
+  const frame = document.getElementById("photo-frame");
+  const img = document.createElement("img");
+  img.src = photoUrls[photoIndex % photoUrls.length];
+  img.onload = ()=>{
+    frame.appendChild(img);
+    requestAnimationFrame(()=> img.classList.add("active"));
+    // alte Bilder nach dem Fade entfernen
+    const old = frame.querySelectorAll("img:not(.active)");
+    old.forEach(o=>o.remove());
+    setTimeout(()=>{
+      [...frame.querySelectorAll("img")].slice(0,-1).forEach(o=>o.remove());
+    }, 1500);
+  };
+  photoIndex++;
+}
+loadPhotos();
+setInterval(loadPhotos, 60*60*1000);   // Fotoliste stündlich neu laden
+setInterval(renderPhoto, 12*1000);     // alle 12s nächstes Foto zeigen
+</script>
+</body>
+</html>
