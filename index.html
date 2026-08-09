@@ -321,17 +321,14 @@ function renderPhoto(){
   if(!photoUrls.length) return;
   const frame = document.getElementById("photo-frame");
   const img = document.createElement("img");
-  img.src = photoUrls[photoIndex % photoUrls.length];
   img.onload = ()=>{
     frame.appendChild(img);
     requestAnimationFrame(()=> img.classList.add("active"));
-    // alte Bilder nach dem Fade entfernen
-    const old = frame.querySelectorAll("img:not(.active)");
-    old.forEach(o=>o.remove());
     setTimeout(()=>{
       [...frame.querySelectorAll("img")].slice(0,-1).forEach(o=>o.remove());
     }, 1500);
   };
+  img.src = photoUrls[photoIndex % photoUrls.length];
   photoIndex++;
 }
 loadPhotos();
