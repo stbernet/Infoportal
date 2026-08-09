@@ -223,7 +223,7 @@ async function loadWeather(){
   }));
   document.getElementById("weather-list").innerHTML = html.join("");
   const webcamEl = document.getElementById("brigels-webcam-large");
-  webcamEl.src = `${CONFIG.BRIGELS_WEBCAM_URL}&t=${Date.now()}`;
+  webcamEl.src = `${CONFIG.WORKER_URL}/webcam?t=${Date.now()}`;
   webcamEl.style.display = "block";
 }
 loadWeather();
