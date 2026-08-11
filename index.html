@@ -58,9 +58,10 @@
   /* Tram */
   .tram{ grid-area:tram; }
   .tram-row{
-    display:grid; grid-template-columns:36px 1fr auto; align-items:center;
+    display:grid; grid-template-columns:36px 1fr auto auto; align-items:center;
     gap:12px; padding:7px 0; border-bottom:1px solid var(--line); position:relative;
   }
+  .dep-time{ font-size:0.85rem; color:var(--text-dim); font-weight:600; }
   .tram-row:last-child{ border-bottom:none; }
   .badge{
     width:28px; height:28px; border-radius:50%; background:var(--red); color:#fff;
@@ -247,6 +248,7 @@ async function loadTram(){
       .map(e => {
         const dep = new Date(e.stop.departure);
         const mins = Math.max(0, Math.round((dep - Date.now())/60000));
+        const depTime = dep.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit"});
         const urgencyPct = Math.max(4, 100 - Math.min(mins,20)*5);
         const isLine16 = String(e.number) === '16';
         const badgeClass = isLine16 ? 'badge badge-square' : 'badge badge-green';
@@ -254,6 +256,7 @@ async function loadTram(){
         return `<div class="tram-row">
           <div class="${badgeClass}">${e.number}</div>
           <div class="dest">${e.to}</div>
+          <div class="dep-time">${depTime}</div>
           <div class="mins">${mins}<small> min</small></div>
           <div class="urgency" style="width:${urgencyPct}%; background:${lineColor}"></div>
         </div>`;
