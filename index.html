@@ -231,40 +231,59 @@ loadWeather();
 setInterval(loadWeather, 15*60*1000);
 
 // ---------- Tram (transport.opendata.ch) ----------
+async function fetchJSON(url){
+  const r = await fetch(url, {cache:"no-store"});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function lineOf(e){
+  // Linie robust bestimmen (number, sonst "T15"/"Tram 15" aus name)
+  const n = String(e.number || "").replace(/\D/g,"") || String(e.name || "").replace(/\D/g,"");
+  return n;
+}
 async function loadTram(){
   const el = document.getElementById("tram-list");
   try{
-    const locRes = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(CONFIG.TRAM_STATION_QUERY)}`);
-    const locData = await locRes.json();
-    const station = locData.stations?.[0];
-    if(!station){ el.innerHTML = `<div class="status">Haltestelle nicht gefunden</div>`; return; }
+    let board = null, lastErr = null;
+    // 1) feste Haltestellen-ID, 2) Suche nach Name, 3) alle gefundenen Stationen
+    const ids = ["8589299"];
+    try{
+      const loc = await fetchJSON(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(CONFIG.TRAM_STATION_QUERY)}&type=station`);
+      (loc.stations||[]).forEach(s=>{ if(s.id && !ids.includes(String(s.id))) ids.push(String(s.id)); });
+    }catch(err){ lastErr = err; console.error("Tram locations:", err); }
 
-    const sbRes = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${station.id}&limit=40`);
-    const sbData = await sbRes.json();
-
-    const rows = (sbData.stationboard || [])
-      .filter(e => CONFIG.TRAM_LINES.includes(String(e.number)))
-      .slice(0, 6)
-      .map(e => {
-        const dep = new Date(e.stop.departure);
-        const mins = Math.max(0, Math.round((dep - Date.now())/60000));
-        const depTime = dep.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit"});
-        const urgencyPct = Math.max(4, 100 - Math.min(mins,20)*5);
-        const isLine16 = String(e.number) === '16';
-        const badgeClass = isLine16 ? 'badge badge-square' : 'badge badge-green';
-        const lineColor = isLine16 ? 'var(--red)' : 'var(--green)';
-        return `<div class="tram-row">
-          <div class="${badgeClass}">${e.number}</div>
-          <div class="dest">${e.to}</div>
-          <div class="dep-time">${depTime}</div>
-          <div class="mins">${mins}<small> min</small></div>
-          <div class="urgency" style="width:${urgencyPct}%; background:${lineColor}"></div>
-        </div>`;
-      });
-
-    el.innerHTML = rows.length ? rows.join("") : `<div class="status">Keine Abfahrten gefunden</div>`;
+    for(const id of ids){
+      try{
+        const sb = await fetchJSON(`https://transport.opendata.ch/v1/stationboard?id=${id}&limit=60`);
+        const rows = (sb.stationboard||[]).filter(e=>CONFIG.TRAM_LINES.includes(lineOf(e)));
+        if(rows.length){ board = rows; break; }
+      }catch(err){ lastErr = err; console.error("Tram stationboard "+id+":", err); }
+    }
+    if(!board){
+      el.innerHTML = `<div class="status">Keine Abfahrten${lastErr ? " ("+lastErr.message+")" : ""}</div>`;
+      return;
+    }
+    const rows = board.slice(0,6).map(e=>{
+      const dep = new Date(e.stop.departure);
+      const mins = Math.max(0, Math.round((dep - Date.now())/60000));
+      const depTime = dep.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit"});
+      const urgencyPct = Math.max(4, 100 - Math.min(mins,20)*5);
+      const ln = lineOf(e);
+      const isLine16 = ln === '16';
+      const badgeClass = isLine16 ? 'badge badge-square' : 'badge badge-green';
+      const lineColor = isLine16 ? 'var(--red)' : 'var(--green)';
+      return `<div class="tram-row">
+        <div class="${badgeClass}">${ln}</div>
+        <div class="dest">${e.to}</div>
+        <div class="dep-time">${depTime}</div>
+        <div class="mins">${mins}<small> min</small></div>
+        <div class="urgency" style="width:${urgencyPct}%; background:${lineColor}"></div>
+      </div>`;
+    });
+    el.innerHTML = rows.join("");
   }catch(e){
-    el.innerHTML = `<div class="status">Nicht verfügbar</div>`;
+    console.error("Tram:", e);
+    el.innerHTML = `<div class="status">Nicht verfügbar (${e.message})</div>`;
   }
 }
 loadTram();
